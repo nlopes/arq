@@ -1,6 +1,6 @@
 [package]
 name = "arq"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Norberto Lopes <nlopes.ml@gmail.com>"]
 edition = "2018"
 description = "Arq library to manage Arq Backup data formats"
@@ -10,6 +10,10 @@ keywords = ["arq", "backup"]
 categories = ["data-structures", "encoding"]
 license = "MIT"
 exclude = [".gitignore", ".travis.yml"]
+
+[package.metadata.docs.rs]
+rustc-args = ["-C", "target-feature=+aes", "-C", "target-cpu=native"]
+rustdoc-args = ["-C", "target-feature=+aes", "-C", "target-cpu=native"]
 
 [badges]
 travis-ci = { repository = "nlopes/arq", branch = "master" }
