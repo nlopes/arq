@@ -29,7 +29,7 @@ pub struct FolderData {
 }
 
 impl FolderData {
-    pub fn from_reader<R: BufRead + Seek>(reader: R, sha1sum: &[u8]) -> Result<Self> {
+    pub fn new<R: BufRead + Seek>(reader: R, sha1sum: &[u8]) -> Result<Self> {
         let fd: FolderData = deserialize(reader)?;
 
         if sha1sum.len() > 40 {
@@ -83,11 +83,11 @@ impl Folder {
         Ok(deserialize(Cursor::new(content))?)
     }
 
-    pub fn from_reader<R: BufRead + Seek>(mut reader: R, master_keys: &[Vec<u8>]) -> Result<Self> {
+    pub fn new<R: BufRead + Seek>(mut reader: R, master_keys: &[Vec<u8>]) -> Result<Self> {
         let header = reader.read_bytes(9)?;
         assert_eq!(header, [101, 110, 99, 114, 121, 112, 116, 101, 100]); // 'encrypted'
 
-        let obj = object_encryption::EncryptedObject::from_reader(&mut reader)?;
+        let obj = object_encryption::EncryptedObject::new(&mut reader)?;
         obj.validate(&master_keys[1])?;
         Folder::from_content(&obj.decrypt(&master_keys[0])?)
     }

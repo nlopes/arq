@@ -4,8 +4,9 @@ use std::io::{BufRead, Cursor, Seek, SeekFrom};
 
 use crate::error::Result;
 use crate::object_encryption::{calculate_sha1sum, EncryptedObject};
-use crate::type_utils::ArqRead;
+use crate::type_utils::{ArqRead, ArqCompressionType};
 use crate::utils::convert_to_hex_string;
+use crate::lz4;
 
 pub struct Pack {
     pub version: Vec<u8>,
@@ -36,7 +37,7 @@ pub struct PackIndexObject {
 }
 
 impl PackIndex {
-    pub fn from_reader<R: BufRead + ArqRead + Seek>(mut reader: R) -> Result<PackIndex> {
+    pub fn new<R: BufRead + ArqRead + Seek>(mut reader: R) -> Result<PackIndex> {
         let magic_number = reader.read_bytes(4)?;
         assert_eq!(magic_number, [255, 116, 79, 99]); // ff 74 4f 63
 
@@ -54,7 +55,7 @@ impl PackIndex {
 
         let mut objects = Vec::new();
         while object_count > 0 {
-            objects.push(PackIndexObject::from_reader(&mut reader)?);
+            objects.push(PackIndexObject::new(&mut reader)?);
             object_count -= 1;
         }
 
@@ -105,14 +106,14 @@ impl PackIndex {
 }
 
 impl Pack {
-    pub fn from_reader<R: ArqRead + BufRead + Seek>(mut reader: R) -> Result<Pack> {
+    pub fn new<R: ArqRead + BufRead + Seek>(mut reader: R) -> Result<Pack> {
         let signature = reader.read_bytes(4)?;
         assert_eq!(signature, [80, 65, 67, 75]);
         let version = reader.read_bytes(4)?;
         let mut object_count = reader.read_u64::<NetworkEndian>()? as usize;
         let mut objects: Vec<PackObject> = Vec::new();
         while object_count > 0 {
-            objects.push(PackObject::from_reader(&mut reader)?);
+            objects.push(PackObject::new(&mut reader)?);
             object_count -= 1;
         }
 
@@ -133,7 +134,7 @@ impl Pack {
 }
 
 impl PackIndexObject {
-    pub fn from_reader<R: ArqRead + BufRead + Seek>(mut reader: R) -> Result<Self> {
+    pub fn new<R: ArqRead + BufRead + Seek>(mut reader: R) -> Result<Self> {
         let offset = reader.read_u64::<NetworkEndian>()?;
         let data_len = reader.read_u64::<NetworkEndian>()?;
         let sha1 = reader.read_bytes(20)?;
@@ -148,7 +149,7 @@ impl PackIndexObject {
 }
 
 impl PackObject {
-    pub fn from_reader<R: ArqRead + BufRead + Seek>(mut reader: R) -> Result<PackObject> {
+    pub fn new<R: ArqRead + BufRead + Seek>(mut reader: R) -> Result<PackObject> {
         // If mimetype present
         let mimetype = if reader.read_arq_bool()? {
             reader.read_arq_string()?
@@ -169,7 +170,18 @@ impl PackObject {
         Ok(PackObject {
             mimetype,
             name,
-            data: EncryptedObject::from_reader(&mut data_reader)?,
+            data: EncryptedObject::new(&mut data_reader)?,
         })
+    }
+
+    pub fn original(&self, compression_type: &ArqCompressionType, master_key: &[u8]) -> Result<Vec<u8>> {
+        let decrypted = self.data.decrypt(master_key)?;
+
+        let content: Vec<u8> = match compression_type {
+            ArqCompressionType::LZ4 => lz4::decompress(&decrypted)?,
+            ArqCompressionType::Gzip => unimplemented!(),
+            ArqCompressionType::None => decrypted.to_owned(),
+        };
+        Ok(content)
     }
 }

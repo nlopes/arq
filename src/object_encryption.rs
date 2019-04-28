@@ -143,7 +143,7 @@ impl EncryptionDat {
         );
     }
 
-    pub fn from_reader<R: BufRead + Seek>(mut reader: R, password: &str) -> Result<EncryptionDat> {
+    pub fn new<R: BufRead + Seek>(mut reader: R, password: &str) -> Result<EncryptionDat> {
         let header = reader.read_bytes(12)?;
         assert_eq!(header, [69, 78, 67, 82, 89, 80, 84, 73, 79, 78, 86, 50]);
         let salt = reader.read_bytes(8)?;
@@ -224,7 +224,7 @@ pub struct EncryptedObject {
 }
 
 impl EncryptedObject {
-    pub fn from_reader<R: ArqRead + BufRead>(mut reader: R) -> Result<EncryptedObject> {
+    pub fn new<R: ArqRead + BufRead>(mut reader: R) -> Result<EncryptedObject> {
         let header = reader.read_bytes(4)?.to_vec();
         assert_eq!(header, [65, 82, 81, 79]); // ARQO
         let hmac_sha256 = reader.read_bytes(32)?.to_vec();

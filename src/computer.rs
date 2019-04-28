@@ -21,9 +21,9 @@ impl ComputerInfo {
     /// Deserialize reader content (plist format) into a `ComputerInfo`.
     /// # Examples:
     ///
-    /// let info = ComputerInfo::from_reader("someid", reader)?;
+    /// let info = ComputerInfo::new("someid", reader)?;
     /// println!("{}", info.computer_name);
-    pub fn from_reader<T: BufRead + Seek>(reader: T, uuid: String) -> Result<ComputerInfo> {
+    pub fn new<T: BufRead + Seek>(reader: T, uuid: String) -> Result<ComputerInfo> {
         let mut computer_info: ComputerInfo = deserialize(reader)?;
         computer_info.uuid = uuid;
         Ok(computer_info)
@@ -48,7 +48,7 @@ mod tests {
 </plist> \
 ";
         let info_res =
-            ComputerInfo::from_reader(Cursor::new(raw.as_bytes()), "someuuid".to_string());
+            ComputerInfo::new(Cursor::new(raw.as_bytes()), "someuuid".to_string());
         let info = info_res.unwrap();
         assert_eq!(info.computer_name, "SOMECOMPUTER");
         assert_eq!(info.uuid, "someuuid");
@@ -66,12 +66,12 @@ mod tests {
   </dict> \
 </plist> \
 ";
-        ComputerInfo::from_reader(Cursor::new(raw.as_bytes()), "someuuid".to_string()).unwrap();
+        ComputerInfo::new(Cursor::new(raw.as_bytes()), "someuuid".to_string()).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn test_empty_computer_info() {
-        ComputerInfo::from_reader(Cursor::new("".as_bytes()), "someuuid".to_string()).unwrap();
+        ComputerInfo::new(Cursor::new("".as_bytes()), "someuuid".to_string()).unwrap();
     }
 }
