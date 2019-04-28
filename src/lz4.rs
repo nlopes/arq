@@ -5,7 +5,7 @@ use std::io::Cursor;
 use crate::error::Result;
 use crate::type_utils::ArqRead;
 
-pub fn lz4_compress(src: &[u8]) -> Result<Vec<u8>> {
+pub fn compress(src: &[u8]) -> Result<Vec<u8>> {
     let src_ptr = src.as_ptr() as *const i8;
     let src_len = src.len() as i32;
     let original_len: i32;
@@ -33,7 +33,7 @@ pub fn lz4_compress(src: &[u8]) -> Result<Vec<u8>> {
     Ok(dst.into_vec().iter().map(|x| *x as u8).collect())
 }
 
-pub fn lz4_decompress(src: &[u8]) -> Result<Vec<u8>> {
+pub fn decompress(src: &[u8]) -> Result<Vec<u8>> {
     let mut reader = Cursor::new(src);
     let original_len = reader.read_arq_i32()?;
     let src_ptr = src[4..].as_ptr() as *const i8;
@@ -53,7 +53,7 @@ mod tests {
     #[test]
     fn test_lz4() {
         let test = String::from("Test string we want to compress").into_bytes();
-        let decompressed = lz4_decompress(&lz4_compress(&test).unwrap()).unwrap();
+        let decompressed = decompress(&compress(&test).unwrap()).unwrap();
         // We only read up to test.len() because decompressed fills the rest of the buffer
         // with zeros
         assert_eq!(test[..], decompressed[..test.len()]);

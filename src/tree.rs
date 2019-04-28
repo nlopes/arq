@@ -4,7 +4,7 @@ use std::io::{BufRead, BufReader};
 
 use crate::blob;
 use crate::error::Result;
-use crate::lz4::lz4_decompress;
+use crate::lz4;
 use crate::type_utils::{ArqCompressionType, ArqDate, ArqRead};
 
 pub struct Node {
@@ -151,7 +151,7 @@ pub struct Tree {
 impl Tree {
     pub fn new(compressed_content: &[u8], compression_type: ArqCompressionType) -> Result<Tree> {
         let content: Vec<u8> = match compression_type {
-            ArqCompressionType::LZ4 => lz4_decompress(compressed_content)?,
+            ArqCompressionType::LZ4 => lz4::decompress(compressed_content)?,
             ArqCompressionType::Gzip => unimplemented!(),
             ArqCompressionType::None => compressed_content.to_owned(),
         };
