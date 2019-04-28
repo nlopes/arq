@@ -19,10 +19,6 @@ pub struct ComputerInfo {
 
 impl ComputerInfo {
     /// Deserialize reader content (plist format) into a `ComputerInfo`.
-    /// # Examples:
-    ///
-    /// let info = ComputerInfo::new("someid", reader)?;
-    /// println!("{}", info.computer_name);
     pub fn new<T: BufRead + Seek>(reader: T, uuid: String) -> Result<ComputerInfo> {
         let mut computer_info: ComputerInfo = deserialize(reader)?;
         computer_info.uuid = uuid;

@@ -1,5 +1,6 @@
 # Arq
 
+[![Build Status](https://travis-ci.org/nlopes/arq.svg?branch=master)](https://travis-ci.org/nlopes/arq)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nlopes/arq/blob/master/LICENSE)
 
 Arq is a library to simplify interactions with files backed up by
