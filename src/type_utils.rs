@@ -1,9 +1,10 @@
 use byteorder::{NetworkEndian, ReadBytesExt};
-use chrono::prelude::*;
 use std;
 use std::io::Read;
 
 use crate::error::Result;
+use crate::compression::CompressionType;
+use crate::date::Date;
 
 pub trait ArqRead {
     fn read_bytes(&mut self, count: usize) -> Result<Vec<u8>>;
@@ -13,9 +14,9 @@ pub trait ArqRead {
     fn read_arq_i32(&mut self) -> Result<i32>;
     fn read_arq_u64(&mut self) -> Result<u64>;
     fn read_arq_i64(&mut self) -> Result<i64>;
-    fn read_arq_compression_type(&mut self) -> Result<ArqCompressionType>;
+    fn read_arq_compression_type(&mut self) -> Result<CompressionType>;
     fn read_arq_data(&mut self) -> Result<Vec<u8>>;
-    fn read_arq_date(&mut self) -> Result<ArqDate>;
+    fn read_arq_date(&mut self) -> Result<Date>;
 }
 
 impl<T: Read> ArqRead for T
@@ -61,67 +62,18 @@ where
         Ok(self.read_i64::<NetworkEndian>()?)
     }
 
-    fn read_arq_compression_type(&mut self) -> Result<ArqCompressionType> {
-        ArqCompressionType::new(self)
+    fn read_arq_compression_type(&mut self) -> Result<CompressionType> {
+        CompressionType::new(self)
     }
 
-    fn read_arq_date(&mut self) -> Result<ArqDate> {
-        ArqDate::new(self)
+    fn read_arq_date(&mut self) -> Result<Date> {
+        Date::new(self)
     }
 
     fn read_arq_data(&mut self) -> Result<Vec<u8>> {
         let strlen = self.read_u64::<NetworkEndian>()?;
         let data_bytes = self.read_bytes(strlen as usize)?;
         Ok(data_bytes.to_vec())
-    }
-}
-
-#[derive(PartialEq, Debug)]
-pub enum ArqCompressionType {
-    None,
-    Gzip,
-    LZ4,
-}
-
-impl ArqCompressionType {
-    pub fn new<R: ArqRead>(mut reader: R) -> Result<ArqCompressionType> {
-        let c = reader.read_arq_i32()?;
-
-        Ok(match c {
-            0 => ArqCompressionType::None,
-            1 => ArqCompressionType::Gzip,
-            2 => ArqCompressionType::LZ4,
-            _ => panic!("Compression type '{}' unknown", c),
-        })
-    }
-}
-
-pub struct ArqDate {
-    milliseconds_since_epoch: u64,
-}
-
-impl ArqDate {
-    pub fn new<R: ArqRead>(mut reader: R) -> Result<ArqDate> {
-        let present = reader.read_bytes(1)?;
-        let milliseconds_since_epoch = if present[0] == 0x01 {
-            reader.read_arq_u64()?
-        } else {
-            0
-        };
-
-        Ok(ArqDate {
-            milliseconds_since_epoch,
-        })
-    }
-}
-
-impl std::fmt::Display for ArqDate {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        // Date is in milliseconds elapsed since epoch
-        let naive_datetime =
-            NaiveDateTime::from_timestamp((self.milliseconds_since_epoch / 1000) as i64, 0);
-        let datetime_again: DateTime<Utc> = DateTime::from_utc(naive_datetime, Utc);
-        write!(f, "{}", datetime_again)
     }
 }
 
@@ -189,15 +141,15 @@ mod tests {
     fn test_arq_compression_type() {
         let mut ct_none_reader = Cursor::new(vec![0, 0, 0, 0]);
         let mut ct = ct_none_reader.read_arq_compression_type().unwrap();
-        assert_eq!(ct, ArqCompressionType::None);
+        assert_eq!(ct, CompressionType::None);
 
         let mut ct_gzip_reader = Cursor::new(vec![0, 0, 0, 1]);
         ct = ct_gzip_reader.read_arq_compression_type().unwrap();
-        assert_eq!(ct, ArqCompressionType::Gzip);
+        assert_eq!(ct, CompressionType::Gzip);
 
         let mut ct_lz4_reader = Cursor::new(vec![0, 0, 0, 2]);
         ct = ct_lz4_reader.read_arq_compression_type().unwrap();
-        assert_eq!(ct, ArqCompressionType::LZ4);
+        assert_eq!(ct, CompressionType::LZ4);
     }
 
     #[test]

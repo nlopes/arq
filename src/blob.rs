@@ -1,5 +1,6 @@
+use crate::date::Date;
 use crate::error::Result;
-use crate::type_utils::{ArqDate, ArqRead};
+use crate::type_utils::ArqRead;
 
 /// BlobKey
 ///
@@ -13,7 +14,7 @@ pub struct BlobKey {
     /* only present for Tree version 17 or later */
     pub archive_id: String,
     pub archive_size: u64,
-    pub archive_upload_date: ArqDate,
+    pub archive_upload_date: Date,
 }
 
 impl BlobKey {

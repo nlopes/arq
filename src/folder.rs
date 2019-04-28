@@ -59,6 +59,58 @@ impl Default for FolderData {
     }
 }
 
+/// Folder
+///
+///
+/// Each time you add a folder for backup, Arq creates a UUID for it and stores 2
+/// objects at the target:
+///
+/// `object: /<computer_uuid>/buckets/<folder_uuid>`
+///
+/// This file contains a "plist"-format XML document containing:
+///   1. the 9-byte header "encrypted"
+///   2. an EncryptedObject containing a plist like this:
+///
+/// ```ascii
+///         <plist version="1.0">
+///             <dict>
+///                 <key>AWSRegionName</key>
+///                 <string>us-east-1</string>
+///                 <key>BucketUUID</key>
+///                 <string>408E376B-ECF7-4688-902A-1E7671BC5B9A</string>
+///                 <key>BucketName</key>
+///                 <string>company</string>
+///                 <key>ComputerUUID</key>
+///                 <string>600150F6-70BB-47C6-A538-6F3A2258D524</string>
+///                 <key>LocalPath</key>
+///                 <string>/Users/stefan/src/company</string>
+///                 <key>LocalMountPoint</key>
+///                 </string>/</string>
+///                 <key>StorageType</key>
+///                 <integer>1</integer>
+///                 <key>VaultName</key>
+///                 <string>arq_408E376B-ECF7-4688-902A-1E7671BC5B9A</string>
+///                 <key>VaultCreatedTime</key>
+///                 <real>12345678.0</real>
+///                 <key>Excludes</key>
+///                 <dict>
+///                     <key>Enabled</key>
+///                     <false></false>
+///                     <key>MatchAny</key>
+///                     <true></true>
+///                     <key>Conditions</key>
+///                     <array></array>
+///                 </dict>
+///             </dict>
+///         </plist>
+/// ```
+///
+/// Only Glacier-backed folders have "VaultName" and "VaultCreatedTime" keys.
+///
+/// NOTE: The folder's UUID and name are called "BucketUUID" and "BucketName" in the
+/// plist; this is a holdover from previous iterations of Arq and is not to be confused
+/// with S3's "bucket" concept.
+///
 #[derive(Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Folder {

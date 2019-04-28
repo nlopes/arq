@@ -1,3 +1,9 @@
+//! Various structs dealing with encrypted objects
+//!
+//! The 2 main objects we include are:
+//!
+//! - EncryptionDat
+//! - EncryptedObject
 use std;
 use std::io::{BufRead, Seek};
 use std::str;

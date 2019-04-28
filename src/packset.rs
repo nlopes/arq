@@ -1,24 +1,178 @@
+//! Packs
+//! -----
+//!
+//! Each folder configured for backup maintains 2 "packsets", one for trees and commits,
+//! and one for all other small files. The packsets are named:
+//!
+//! ```ascii
+//! <folder_uuid>-trees
+//! <folder_uuid>-blobs
+//! ```
+//!
+//! Small files are separated into 2 packsets because the trees and commits are cached
+//! locally (so that Arq gives reasonable performance for browsing backups); all other
+//! small blobs don't need to be cached.
+//!
+//! A packset is a set of "packs". When Arq is backing up a folder, it combines small
+//! files into a single larger packfile; when the packfile reaches 10MB, it is stored at
+//! the destination. Also, when Arq finishes backing up a folder it stores its unsaved
+//! packfiles no matter their sizes.
+//!
+//! When storing a pack, Arq stores the packfile as:
+//!
+//! `/<computer_uuid>/packsets/<folder_uuid>-(blobs|trees)/<sha1>.pack`
+//!
+//! It also stores an index of the SHA1s contained in the pack as:
+//!
+//! `/<computer_uuid>/packsets/<folder_uuid>-(blobs|trees)/<sha1>.index`
 use byteorder::{NetworkEndian, ReadBytesExt};
 use std;
 use std::io::{BufRead, Cursor, Seek, SeekFrom};
 
+use crate::compression::CompressionType;
 use crate::error::Result;
 use crate::object_encryption::{calculate_sha1sum, EncryptedObject};
-use crate::type_utils::{ArqRead, ArqCompressionType};
+use crate::type_utils::ArqRead;
 use crate::utils::convert_to_hex_string;
-use crate::lz4;
 
+///Pack File Format
+///----------------
+///
+///```ascii
+///signature                   50 41 43 4b ("PACK")
+///version (2)                 00 00 00 02 (network-byte-order 4 bytes)
+///object count                00 00 00 00 (network-byte-order 8 bytes)
+///object count                00 00 f0 f2
+///object[0] mimetype not null 01          (1 byte) (this is usually zero)
+///object[0] mimetype strlen   00 00 00 00 (network-byte-order 8 bytes) (this isn't here if not-null is zero)
+///                            00 00 00 08
+///object[0] mimetype string   xx xx xx xx (n bytes)
+///                            xx xx xx xx
+///object[0] name not null     01          (1 byte) (this is usually zero)
+///object[0] name strlen       00 00 00 00 (network-byte-order 8 bytes) (this isn't here if not-null is zero)
+///                            00 00 00 08
+///object[0] name string       xx xx xx xx (n bytes)
+///                            xx xx xx xx
+///object[0] data length       00 00 00 00 (network-byte-order 8 bytes)
+///                            00 00 00 06
+///object[0] data              xx xx xx xx (n bytes)
+///                            xx xx
+///...
+///object[f0f2] mimetype not null 01       (1 byte) (this is usually zero)
+///object[f0f2] mimetype len   00 00 00 00 (network-byte-order 8 bytes) (this isn't here if not-null is zero)
+///                            00 00 00 08
+///object[f0f2] mimetype str   xx xx xx xx (n bytes)
+///                            xx xx xx xx
+///object[f0f2] name not null  01          (1 byte) (this is usually zero)
+///object[f0f2] name strlen    00 00 00 00 (network-byte-order 8 bytes) (this isn't here if not-null is zero)
+///                            00 00 00 08
+///object[f0f2] name string    xx xx xx xx (n bytes)
+///                            xx xx xx xx
+///object[f0f2] data length    00 00 00 00 (network-byte-order 8 bytes)
+///                            00 00 00 04
+///object[f0f2] data           12 34 12 34
+///20-byte SHA1 of all of the  xx xx xx xx
+///above                       xx xx xx xx
+///                            xx xx xx xx
+///                            xx xx xx xx
+///                            xx xx xx xx
+///```
 pub struct Pack {
     pub version: Vec<u8>,
     pub objects: Vec<PackObject>,
 }
 
+/// PackObject
+/// ----------
+///
+/// This is an auxiliary structure to access the objects described in the "Pack File
+/// Format". Each one of these has the following format:
+///
+/// ```ascii
+/// mimetype not null 01          (1 byte) (this is usually zero)
+/// mimetype strlen   00 00 00 00 (network-byte-order 8 bytes) (this isn't here if not-null is zero)
+///                   00 00 00 08
+/// mimetype string   xx xx xx xx (n bytes)
+///                   xx xx xx xx
+/// name not null     01          (1 byte) (this is usually zero)
+/// name strlen       00 00 00 00 (network-byte-order 8 bytes) (this isn't here if not-null is zero)
+///                   00 00 00 08
+/// name string       xx xx xx xx (n bytes)
+///                   xx xx xx xx
+/// data length       00 00 00 00 (network-byte-order 8 bytes)
+///                   00 00 00 06
+/// data              xx xx xx xx (n bytes)
+///                   xx xx
+///```
 pub struct PackObject {
     pub mimetype: String,
     pub name: String,
     pub data: EncryptedObject,
 }
 
+/// Pack Index Format
+/// -----------------
+///
+/// ```ascii
+/// magic number                ff 74 4f 63
+/// version (2)                 00 00 00 02 network-byte-order
+/// fanout[0]                   00 00 00 02 (4-byte count of SHA1s starting with 0x00)
+/// ...
+/// fanout[255]                 00 00 f0 f2 (4-byte count of total objects == count of SHA1s starting with 0xff or smaller)
+/// object[0]                   00 00 00 00 (8-byte network-byte-order offset)
+///                             00 00 00 00
+///                             00 00 00 00 (8-byte network-byte-order data length)
+///                             00 00 00 00
+///                             00 xx xx xx (sha1 starting with 00)
+///                             xx xx xx xx
+///                             xx xx xx xx
+///                             xx xx xx xx
+///                             xx xx xx xx
+///                             00 00 00 00 (4 bytes for alignment)
+/// object[1]                   00 00 00 00 (8-byte network-byte-order offset)
+///                             00 00 00 00
+///                             00 00 00 00 (8-byte network-byte-order data length)
+///                             00 00 00 00
+///                             00 xx xx xx (sha1 starting with 00)
+///                             xx xx xx xx
+///                             xx xx xx xx
+///                             xx xx xx xx
+///                             xx xx xx xx
+///                             00 00 00 00 (4 bytes for alignment)
+/// object[2]                   00 00 00 00 (8-byte network-byte-order offset)
+///                             00 00 00 00
+///                             00 00 00 00 (8-byte network-byte-order data length)
+///                             00 00 00 00
+///                             00 xx xx xx (sha1 starting with 00)
+///                             xx xx xx xx
+///                             xx xx xx xx
+///                             xx xx xx xx
+///                             xx xx xx xx
+///                             00 00 00 00 (4 bytes for alignment)
+/// ...
+/// object[f0f1]                00 00 00 00 (8-byte network-byte-order offset)
+///                             00 00 00 00
+///                             00 00 00 00 (8-byte network-byte-order data length)
+///                             00 00 00 00
+///                             ff xx xx xx (sha1 starting with ff)
+///                             xx xx xx xx
+///                             xx xx xx xx
+///                             xx xx xx xx
+///                             xx xx xx xx
+///                             00 00 00 00 (4 bytes for alignment)
+/// Glacier archiveId not null  01          (1 byte)                                    /* Glacier only */
+/// Glacier archiveId strlen    00 00 00 00 (network-byte-order 8 bytes)                /* Glacier only */
+///                             00 00 00 08                                             /* Glacier only */
+/// Glacier archiveId string    xx xx xx xx (n bytes)                                   /* Glacier only */
+///                             xx xx xx xx                                             /* Glacier only */
+/// Glacier pack size           00 00 00 00 (8-byte network-byte-order data length)     /* Glacier only */
+///                             00 00 00 00                                             /* Glacier only */
+/// 20-byte SHA1 of all of the  xx xx xx xx
+/// above                       xx xx xx xx
+///                             xx xx xx xx
+///                             xx xx xx xx
+///                             xx xx xx xx
+/// ```
 pub struct PackIndex {
     pub version: Vec<u8>,
     pub fanout: Vec<Vec<u8>>,
@@ -30,6 +184,24 @@ pub struct PackIndex {
     pub glacier_pack_size: usize,
 }
 
+/// PackIndexObject
+/// ----------
+///
+/// This is an auxiliary structure to access the objects described in the "Pack Index
+/// Format". Each one of these has the following format:
+///
+/// ```ascii
+/// offset       00 00 00 00 (8-byte network-byte-order offset)
+///              00 00 00 00
+/// data length  00 00 00 00 (8-byte network-byte-order data length)
+///              00 00 00 00
+/// sha1         00 xx xx xx (sha1 starting with 00)
+///              xx xx xx xx
+///              xx xx xx xx
+///              xx xx xx xx
+///              xx xx xx xx
+/// alignment    00 00 00 00 (4 bytes for alignment) - we don't include this one
+/// ```
 pub struct PackIndexObject {
     pub offset: usize,
     pub data_len: usize,
@@ -174,14 +346,13 @@ impl PackObject {
         })
     }
 
-    pub fn original(&self, compression_type: &ArqCompressionType, master_key: &[u8]) -> Result<Vec<u8>> {
+    pub fn original(
+        &self,
+        compression_type: CompressionType,
+        master_key: &[u8],
+    ) -> Result<Vec<u8>> {
         let decrypted = self.data.decrypt(master_key)?;
-
-        let content: Vec<u8> = match compression_type {
-            ArqCompressionType::LZ4 => lz4::decompress(&decrypted)?,
-            ArqCompressionType::Gzip => unimplemented!(),
-            ArqCompressionType::None => decrypted.to_owned(),
-        };
+        let content = CompressionType::decompress(&decrypted, compression_type)?;
         Ok(content)
     }
 }

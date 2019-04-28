@@ -19,6 +19,25 @@ pub struct ComputerInfo {
 
 impl ComputerInfo {
     /// Deserialize reader content (plist format) into a `ComputerInfo`.
+    /// ## Examples
+    ///
+    /// Reading a computer info entry:
+    ///
+    /// ```
+    /// extern crate arq;
+    /// let reader = std::io::Cursor::new("<plist version=\"1.0\">
+    ///    <dict>
+    ///        <key>userName</key>
+    ///        <string>someuser</string>
+    ///        <key>computerName</key>
+    ///        <string>somecomputer</string>
+    ///    </dict>
+    ///    </plist>");
+    /// let data = arq::computer::ComputerInfo::new(reader, "someuuid".to_string()).unwrap();
+    /// assert_eq!(data.computer_name, "somecomputer".to_string());
+    /// assert_eq!(data.user_name, "someuser".to_string());
+    /// assert_eq!(data.uuid, "someuuid".to_string());
+    /// ```
     pub fn new<T: BufRead + Seek>(reader: T, uuid: String) -> Result<ComputerInfo> {
         let mut computer_info: ComputerInfo = deserialize(reader)?;
         computer_info.uuid = uuid;
