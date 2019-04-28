@@ -9,7 +9,7 @@ repository = "https://github.com/nlopes/arq.git"
 keywords = ["arq", "backup"]
 categories = ["data-structures", "encoding"]
 license = "MIT"
-exclude = [".cargo/config", ".gitignore", ".travis.yml"]
+exclude = [".gitignore", ".travis.yml"]
 
 [badges]
 travis-ci = { repository = "nlopes/arq", branch = "master" }
