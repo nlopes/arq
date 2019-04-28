@@ -7,7 +7,7 @@ description = "Arq library to manage Arq Backup data formats"
 documentation = "https://docs.rs/arq"
 repository = "https://github.com/nlopes/arq.git"
 keywords = ["arq", "backup"]
-categories = ["backup"]
+categories = ["data-structures", "encoding"]
 license = "MIT"
 exclude = [".cargo/config", ".gitignore", ".travis.yml"]
 
