@@ -20,7 +20,6 @@ extern crate serde_derive;
 extern crate sha1;
 extern crate sha2;
 
-mod blob;
 pub mod computer;
 pub mod error;
 pub mod folder;
@@ -29,5 +28,6 @@ pub mod packset;
 pub mod tree;
 pub mod type_utils;
 
+mod blob;
 mod lz4;
 mod utils;

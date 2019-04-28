@@ -181,7 +181,7 @@ impl EncryptionDat {
 /// We use the term "EncryptedObject" throughout this document as shorthand to
 /// describe an object containing data in the following format:
 ///
-///```
+///```ascii
 /// header                              41 52 51 4f  ARQO
 /// HMACSHA256                          xx xx xx xx
 ///                                     xx xx xx xx

@@ -1,6 +1,10 @@
 use crate::error::Result;
 use crate::type_utils::{ArqDate, ArqRead};
 
+/// BlobKey
+///
+/// BlobKeys are used as an auxiliary data structure and there is *probably* no need to
+/// interact with this directly unless you're working within this library.
 pub struct BlobKey {
     pub sha1: String,
     pub is_encryption_key_stretched: bool, /* only present for Tree version 14 or later, Commit version 4 or later */
