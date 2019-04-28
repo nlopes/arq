@@ -12,3 +12,11 @@ possible to build a full replacement of Arq (the program) with this library.
 
 If you are looking for a way to restore a file backed up by Arq (the program), you can use
 [evu](https://github.com/nlopes/evu) which is built using this library.
+
+## IMPORTANT NOTE
+Only supports fairly recent versions of the file format (as of 2019/04/28):
+
+- encryptionv3.dat
+- CommitV012
+- TreeV022
+- XAttrSetV002
