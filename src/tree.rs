@@ -21,7 +21,7 @@ use crate::blob;
 use crate::compression::CompressionType;
 use crate::date::Date;
 use crate::error::Result;
-use crate::type_utils::{ArqRead};
+use crate::type_utils::ArqRead;
 
 /// Node
 ///

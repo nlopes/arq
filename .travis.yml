@@ -9,8 +9,9 @@ matrix:
 cache: cargo
 
 before_script:
-  - rustup component add clippy
+  - rustup component add clippy rustfmt
 
 script:
+  - cargo fmt -- --check
   - cargo test --verbose
   - cargo clippy

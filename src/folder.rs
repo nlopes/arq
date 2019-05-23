@@ -34,7 +34,7 @@ impl FolderData {
 
         if sha1sum.len() > 40 {
             // 89 is "Y"
-            assert_eq!(sha1sum[sha1sum.len()-1], 89);
+            assert_eq!(sha1sum[sha1sum.len() - 1], 89);
             assert_eq!(
                 // subtracting 1 due to the Y appended to the sha.
                 std::str::from_utf8(&sha1sum[..sha1sum.len() - 1])?,

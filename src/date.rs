@@ -1,4 +1,4 @@
-use chrono::prelude::{NaiveDateTime, DateTime, Utc};
+use chrono::prelude::{DateTime, NaiveDateTime, Utc};
 
 use crate::error::Result;
 use crate::type_utils::ArqRead;

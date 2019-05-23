@@ -2,9 +2,9 @@ use byteorder::{NetworkEndian, ReadBytesExt};
 use std;
 use std::io::Read;
 
-use crate::error::Result;
 use crate::compression::CompressionType;
 use crate::date::Date;
+use crate::error::Result;
 
 pub trait ArqRead {
     fn read_bytes(&mut self, count: usize) -> Result<Vec<u8>>;

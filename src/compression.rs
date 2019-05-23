@@ -1,6 +1,6 @@
 use crate::error::Result;
-use crate::type_utils::ArqRead;
 use crate::lz4;
+use crate::type_utils::ArqRead;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum CompressionType {

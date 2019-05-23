@@ -1,7 +1,7 @@
 use std::io::{BufRead, Seek};
 
-use plist;
 use crate::error::Result;
+use plist;
 
 /// Contains metadata information with user name and computer name.
 ///
@@ -62,8 +62,7 @@ mod tests {
   </dict> \
 </plist> \
 ";
-        let info_res =
-            ComputerInfo::new(Cursor::new(raw.as_bytes()), "someuuid".to_string());
+        let info_res = ComputerInfo::new(Cursor::new(raw.as_bytes()), "someuuid".to_string());
         let info = info_res.unwrap();
         assert_eq!(info.computer_name, "SOMECOMPUTER");
         assert_eq!(info.uuid, "someuuid");
