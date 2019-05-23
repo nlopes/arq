@@ -1,6 +1,6 @@
-use plist::serde::deserialize;
 use std::io::{BufRead, Seek};
 
+use plist;
 use crate::error::Result;
 
 /// Contains metadata information with user name and computer name.
@@ -39,7 +39,7 @@ impl ComputerInfo {
     /// assert_eq!(data.uuid, "someuuid".to_string());
     /// ```
     pub fn new<T: BufRead + Seek>(reader: T, uuid: String) -> Result<ComputerInfo> {
-        let mut computer_info: ComputerInfo = deserialize(reader)?;
+        let mut computer_info: ComputerInfo = plist::from_reader(reader)?;
         computer_info.uuid = uuid;
         Ok(computer_info)
     }

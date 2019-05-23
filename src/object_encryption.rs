@@ -8,10 +8,9 @@ use std;
 use std::io::{BufRead, Seek};
 use std::str;
 
-use aesni::block_cipher_trait::generic_array::GenericArray;
 use aesni::Aes256;
 use block_modes::block_padding::Pkcs7;
-use block_modes::{BlockMode, BlockModeIv, Cbc};
+use block_modes::{BlockMode, Cbc};
 use hmac::{Hmac, Mac};
 use ring::{digest, pbkdf2};
 use sha1::{Digest, Sha1};
@@ -166,9 +165,8 @@ impl EncryptionDat {
             return Err(Error::WrongPassword);
         }
 
-        let iv_array = GenericArray::from_slice(&iv);
-        let mode = Cbc::<Aes256, Pkcs7>::new_varkey(&encryption_key[0..32], iv_array)?;
-        mode.decrypt_pad(&mut encrypted_master_keys)?;
+        let mode = Cbc::<Aes256, Pkcs7>::new_var(&encryption_key[0..32], &iv[..])?;
+        mode.decrypt(&mut encrypted_master_keys)?;
 
         Ok(EncryptionDat {
             header: header.to_vec(),
@@ -260,17 +258,15 @@ impl EncryptedObject {
     pub fn decrypt(&self, master_key: &[u8]) -> Result<Vec<u8>> {
         let mut enc_data_iv_session = self.encrypted_data_iv_session.clone();
         let master_iv = self.master_iv.clone();
-        let iv_array = GenericArray::from_slice(&master_iv);
 
-        let mode = Cbc::<Aes256, Pkcs7>::new_varkey(&master_key, iv_array)?;
-        let data_iv_session = mode.decrypt_pad(&mut enc_data_iv_session)?;
+        let mode = Cbc::<Aes256, Pkcs7>::new_var(&master_key, &master_iv)?;
+        let data_iv_session = mode.decrypt(&mut enc_data_iv_session)?;
         let data_iv = &data_iv_session[0..16];
         let session_key = &data_iv_session[16..48];
 
         let mut ciphertext = self.ciphertext.clone();
-        let data_iv_array = GenericArray::from_slice(&data_iv);
-        let session_mode = Cbc::<Aes256, Pkcs7>::new_varkey(&session_key, data_iv_array)?;
-        let content = session_mode.decrypt_pad(&mut ciphertext)?;
+        let session_mode = Cbc::<Aes256, Pkcs7>::new_var(&session_key, data_iv)?;
+        let content = session_mode.decrypt(&mut ciphertext)?;
         Ok(content.to_owned())
     }
 }

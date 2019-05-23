@@ -2,7 +2,7 @@ use std;
 use std::collections::BTreeMap;
 use std::io::{BufRead, Cursor, Seek};
 
-use plist::serde::deserialize;
+use plist;
 
 use crate::error::Result;
 use crate::object_encryption;
@@ -30,7 +30,7 @@ pub struct FolderData {
 
 impl FolderData {
     pub fn new<R: BufRead + Seek>(reader: R, sha1sum: &[u8]) -> Result<Self> {
-        let fd: FolderData = deserialize(reader)?;
+        let fd: FolderData = plist::from_reader(reader)?;
 
         if sha1sum.len() > 40 {
             // 89 is "Y"
@@ -132,7 +132,7 @@ pub struct Folder {
 
 impl Folder {
     fn from_content(content: &[u8]) -> Result<Self> {
-        Ok(deserialize(Cursor::new(content))?)
+        Ok(plist::from_reader(Cursor::new(content))?)
     }
 
     pub fn new<R: BufRead + Seek>(mut reader: R, master_keys: &[Vec<u8>]) -> Result<Self> {

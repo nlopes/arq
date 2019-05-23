@@ -47,6 +47,12 @@ impl std::convert::From<block_modes::BlockModeError> for Error {
     }
 }
 
+impl std::convert::From<block_modes::InvalidKeyIvLength> for Error {
+    fn from(_error: block_modes::InvalidKeyIvLength) -> Error {
+        Error::BlockModeError
+    }
+}
+
 impl std::convert::From<plist::Error> for Error {
     fn from(_error: plist::Error) -> Error {
         Error::ParseError
