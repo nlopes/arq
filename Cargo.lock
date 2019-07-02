@@ -27,7 +27,7 @@ dependencies = [
  "pbkdf2 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "plist 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "ring 0.14.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.94 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha-1 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -271,7 +271,7 @@ dependencies = [
  "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "humantime 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "line-wrap 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.94 (registry+https://github.com/rust-lang/crates.io-index)",
  "xml-rs 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -356,7 +356,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "serde"
-version = "1.0.93"
+version = "1.0.94"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -511,7 +511,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum redox_syscall 0.1.54 (registry+https://github.com/rust-lang/crates.io-index)" = "12229c14a0f65c4f1cb046a3b52047cdd9da1f4b30f8a39c5063c8bae515e252"
 "checksum ring 0.14.6 (registry+https://github.com/rust-lang/crates.io-index)" = "426bc186e3e95cac1e4a4be125a4aca7e84c2d616ffc02244eef36e2a60a093c"
 "checksum safemem 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8dca453248a96cb0749e36ccdfe2b0b4e54a61bfef89fb97ec621eb8e0a93dd9"
-"checksum serde 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)" = "960e29cf7004b3b6e65fc5002981400eb3ccc017a08a2406940823e58e7179a9"
+"checksum serde 1.0.94 (registry+https://github.com/rust-lang/crates.io-index)" = "076a696fdea89c19d3baed462576b8f6d663064414b5c793642da8dfeb99475b"
 "checksum serde_derive 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)" = "c4cce6663696bd38272e90bf34a0267e1226156c33f52d3f3915a2dd5d802085"
 "checksum sha-1 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)" = "23962131a91661d643c98940b20fcaffe62d776a823247be80a48fcb8b6fce68"
 "checksum sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7b4d8bfd0e469f417657573d8451fb33d16cfe0989359b93baf3a1ffc639543d"
