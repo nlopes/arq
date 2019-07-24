@@ -140,7 +140,7 @@ impl EncryptionDat {
 
     fn derive_encryption_key(password: &[u8], salt: &[u8], result: &mut [u8]) {
         pbkdf2::derive(
-            &digest::SHA1,
+            pbkdf2::PBKDF2_HMAC_SHA1,
             std::num::NonZeroU32::new(200_000).unwrap(), // this unwrap will always succeed
             salt,
             password,
