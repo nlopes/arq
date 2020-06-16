@@ -20,15 +20,16 @@ use crate::error::{Error, Result};
 use crate::type_utils::ArqRead;
 
 fn calculate_hmacsha256(secret: &[u8], message: &[u8]) -> Result<Vec<u8>> {
+    use hmac::NewMac;
     let mut mac = Hmac::<Sha256>::new_varkey(secret)?;
-    mac.input(&message);
-    Ok(mac.result().code().to_vec())
+    mac.update(&message);
+    Ok(mac.finalize().into_bytes().to_vec())
 }
 
 pub fn calculate_sha1sum(message: &[u8]) -> Vec<u8> {
     let mut sha = Sha1::new();
-    sha.input(message);
-    sha.result().to_vec()
+    sha.update(message);
+    sha.finalize().to_vec()
 }
 
 pub trait Validation {
