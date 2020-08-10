@@ -19,7 +19,7 @@ rustdoc-args = ["-C", "target-feature=+aes", "-C", "target-cpu=native"]
 travis-ci = { repository = "nlopes/arq", branch = "master" }
 
 [dependencies]
-aesni = "0.7"
+aesni = "0.8"
 block-modes = "0.5"
 block-padding = "0.2"
 byteorder = "1.3"
