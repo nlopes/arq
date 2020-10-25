@@ -35,8 +35,8 @@ impl std::convert::From<hmac::crypto_mac::InvalidKeyLength> for Error {
     }
 }
 
-impl std::convert::From<aesni::block_cipher::InvalidKeyLength> for Error {
-    fn from(_error: aesni::block_cipher::InvalidKeyLength) -> Error {
+impl std::convert::From<aesni::cipher::block::InvalidKeyLength> for Error {
+    fn from(_error: aesni::cipher::block::InvalidKeyLength) -> Error {
         Error::CipherError
     }
 }
