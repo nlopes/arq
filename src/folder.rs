@@ -13,7 +13,7 @@ use crate::type_utils::ArqRead;
 /// It's a plist containing the previous and current Commit SHA1s, the SHA1 of the pack
 /// file containing the new Commit, and whether the new Commit is a "rewrite" (because the
 /// user deleted a backup record for instance).
-#[derive(Deserialize)]
+#[derive(Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 #[serde(default)]
 pub struct FolderData {
@@ -43,19 +43,6 @@ impl FolderData {
         }
 
         Ok(fd)
-    }
-}
-
-impl Default for FolderData {
-    fn default() -> Self {
-        FolderData {
-            old_head_sha1: String::new(),
-            old_head_stretch_key: false,
-            new_head_sha1: String::new(),
-            new_head_stretch_key: false,
-            is_rewrite: false,
-            pack_sha1: String::new(),
-        }
     }
 }
 

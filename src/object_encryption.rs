@@ -117,7 +117,6 @@ impl Validation for Header {
 /// privacy issue.
 
 pub struct EncryptionDat {
-    header: Header,
     salt: Vec<u8>,
     hmac_sha256: Vec<u8>,
     iv: Vec<u8>,
@@ -150,7 +149,7 @@ impl EncryptionDat {
 
     pub fn new<R: BufRead + Seek>(mut reader: R, password: &str) -> Result<EncryptionDat> {
         let header = reader.read_bytes(12)?;
-        assert_eq!(header, [69, 78, 67, 82, 89, 80, 84, 73, 79, 78, 86, 50]);
+        assert_eq!(header, [69, 78, 67, 82, 89, 80, 84, 73, 79, 78, 86, 50]); // ENCRYPTIONV2
         let salt = reader.read_bytes(8)?;
         let hmacsha256 = reader.read_bytes(32)?;
         let iv = reader.read_bytes(16)?;
@@ -169,7 +168,6 @@ impl EncryptionDat {
             .decrypt_padded_mut::<Pkcs7>(&mut encrypted_master_keys)?;
 
         Ok(EncryptionDat {
-            header: header.to_vec(),
             salt: salt.to_vec(),
             hmac_sha256: hmacsha256.to_vec(),
             iv: iv.to_vec(),
@@ -220,7 +218,6 @@ impl EncryptionDat {
 /// 3. Decrypt "encrypted data IV + session key" using the first "master key" from the Encryption Dat File and the "master IV".
 /// 4. Decrypt the ciphertext using the session key and data IV.
 pub struct EncryptedObject {
-    header: Header,
     hmac_sha256: Vec<u8>, //TODO: can we make this [u8; size?]
     master_iv: Vec<u8>,
     encrypted_data_iv_session: Vec<u8>,
@@ -238,7 +235,6 @@ impl EncryptedObject {
         reader.read_to_end(&mut ciphertext)?;
 
         Ok(EncryptedObject {
-            header,
             hmac_sha256,
             master_iv,
             encrypted_data_iv_session,
