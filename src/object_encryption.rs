@@ -8,9 +8,7 @@ use std;
 use std::io::{BufRead, Seek};
 use std::str;
 
-use aesni::Aes256;
-use block_modes::block_padding::Pkcs7;
-use block_modes::{BlockMode, Cbc};
+use aes::cipher::{block_padding::Pkcs7, BlockDecryptMut, KeyIvInit};
 use hmac::{Hmac, Mac};
 use ring::pbkdf2;
 use sha1::{Digest, Sha1};
@@ -19,10 +17,11 @@ use sha2::Sha256;
 use crate::error::{Error, Result};
 use crate::type_utils::ArqRead;
 
+type Aes256CbcDec = cbc::Decryptor<aes::Aes256>;
+
 fn calculate_hmacsha256(secret: &[u8], message: &[u8]) -> Result<Vec<u8>> {
-    use hmac::NewMac;
-    let mut mac = Hmac::<Sha256>::new_varkey(secret)?;
-    mac.update(&message);
+    let mut mac = Hmac::<Sha256>::new_from_slice(secret)?;
+    mac.update(message);
     Ok(mac.finalize().into_bytes().to_vec())
 }
 
@@ -166,8 +165,8 @@ impl EncryptionDat {
             return Err(Error::WrongPassword);
         }
 
-        let mode = Cbc::<Aes256, Pkcs7>::new_var(&encryption_key[0..32], &iv[..])?;
-        mode.decrypt(&mut encrypted_master_keys)?;
+        let _ = Aes256CbcDec::new_from_slices(&encryption_key[0..32], &iv[..])?
+            .decrypt_padded_mut::<Pkcs7>(&mut encrypted_master_keys)?;
 
         Ok(EncryptionDat {
             header: header.to_vec(),
@@ -251,7 +250,7 @@ impl EncryptedObject {
         let mut master_iv_and_data = self.master_iv.clone();
         master_iv_and_data.append(&mut self.encrypted_data_iv_session.clone());
         master_iv_and_data.append(&mut self.ciphertext.clone());
-        let calculated_hmacsha256 = calculate_hmacsha256(&master_key, &master_iv_and_data)?;
+        let calculated_hmacsha256 = calculate_hmacsha256(master_key, &master_iv_and_data)?;
         assert_eq!(calculated_hmacsha256, self.hmac_sha256);
         Ok(())
     }
@@ -260,14 +259,14 @@ impl EncryptedObject {
         let mut enc_data_iv_session = self.encrypted_data_iv_session.clone();
         let master_iv = self.master_iv.clone();
 
-        let mode = Cbc::<Aes256, Pkcs7>::new_var(&master_key, &master_iv)?;
-        let data_iv_session = mode.decrypt(&mut enc_data_iv_session)?;
+        let data_iv_session = Aes256CbcDec::new_from_slices(master_key, &master_iv)?
+            .decrypt_padded_mut::<Pkcs7>(&mut enc_data_iv_session)?;
         let data_iv = &data_iv_session[0..16];
         let session_key = &data_iv_session[16..48];
 
         let mut ciphertext = self.ciphertext.clone();
-        let session_mode = Cbc::<Aes256, Pkcs7>::new_var(&session_key, data_iv)?;
-        let content = session_mode.decrypt(&mut ciphertext)?;
+        let content = Aes256CbcDec::new_from_slices(session_key, data_iv)?
+            .decrypt_padded_mut::<Pkcs7>(&mut ciphertext)?;
         Ok(content.to_owned())
     }
 }
@@ -287,16 +286,16 @@ mod tests {
         ]
         .to_vec();
 
-        assert_eq!(result, calculate_hmacsha256(&secret, &message).unwrap());
+        assert_eq!(result, calculate_hmacsha256(secret, message).unwrap());
     }
 
     #[test]
     fn test_calculate_sha1sum() {
         let message = "message".as_bytes();
-        println!("{:#?}", calculate_sha1sum(&message));
+        println!("{:#?}", calculate_sha1sum(message));
         assert_eq!(
             hex!("6f9b9af3cd6e8b8a73c2cdced37fe9f59226e27d"),
-            calculate_sha1sum(&message)[..]
+            calculate_sha1sum(message)[..]
         );
     }
 }

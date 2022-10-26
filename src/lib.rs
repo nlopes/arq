@@ -46,9 +46,7 @@
 //!
 //! **For a more complex example, please check a command line tool (`evu`) built using this
 //! library at [https://github.com/nlopes/evu](https://github.com/nlopes/evu).**
-extern crate aesni;
-extern crate block_modes;
-extern crate block_padding;
+extern crate aes;
 extern crate byteorder;
 extern crate chrono;
 #[cfg_attr(test, macro_use)]

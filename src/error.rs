@@ -29,27 +29,15 @@ impl std::error::Error for Error {
     }
 }
 
-impl std::convert::From<hmac::crypto_mac::InvalidKeyLength> for Error {
-    fn from(_error: hmac::crypto_mac::InvalidKeyLength) -> Error {
+impl std::convert::From<digest::InvalidLength> for Error {
+    fn from(_error: digest::InvalidLength) -> Error {
         Error::CryptoError
     }
 }
 
-impl std::convert::From<aesni::cipher::block::InvalidKeyLength> for Error {
-    fn from(_error: aesni::cipher::block::InvalidKeyLength) -> Error {
+impl std::convert::From<aes::cipher::block_padding::UnpadError> for Error {
+    fn from(_: aes::cipher::block_padding::UnpadError) -> Self {
         Error::CipherError
-    }
-}
-
-impl std::convert::From<block_modes::BlockModeError> for Error {
-    fn from(_error: block_modes::BlockModeError) -> Error {
-        Error::BlockModeError
-    }
-}
-
-impl std::convert::From<block_modes::InvalidKeyIvLength> for Error {
-    fn from(_error: block_modes::InvalidKeyIvLength) -> Error {
-        Error::BlockModeError
     }
 }
 
