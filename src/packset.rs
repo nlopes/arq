@@ -239,7 +239,7 @@ impl PackIndex {
         // "cursor"/reader. So what I do is I try to read 21 bytes. If I can, then I know
         // I have more than just the sha1 of the content. If I can't, then I'm back where
         // I was and I do nothing.
-        let mut _buf = Vec::with_capacity(21);
+        let mut _buf = vec![0; 21];
         if reader.read_exact(&mut _buf).is_ok() {
             // This is a easier condition than trying to read the bytes for glacier.  If all
             // the bytes read + 20 (for the final sha1) account for the entire length of the

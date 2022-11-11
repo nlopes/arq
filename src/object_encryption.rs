@@ -8,9 +8,13 @@ use std;
 use std::io::{BufRead, Seek};
 use std::str;
 
+use aes::cipher::BlockEncryptMut;
 use aes::cipher::{block_padding::Pkcs7, BlockDecryptMut, KeyIvInit};
 use hmac::{Hmac, Mac};
-use ring::pbkdf2;
+use ring::{
+    pbkdf2,
+    rand::{SecureRandom, SystemRandom},
+};
 use sha1::{Digest, Sha1};
 use sha2::Sha256;
 
@@ -18,6 +22,9 @@ use crate::error::{Error, Result};
 use crate::type_utils::ArqRead;
 
 type Aes256CbcDec = cbc::Decryptor<aes::Aes256>;
+type Aes256CbcEnc = cbc::Encryptor<aes::Aes256>;
+
+const ENCRYPTION_V2_HEADER: [u8; 12] = [69, 78, 67, 82, 89, 80, 84, 73, 79, 78, 86, 50]; // ENCRYPTIONV2
 
 fn calculate_hmacsha256(secret: &[u8], message: &[u8]) -> Result<Vec<u8>> {
     let mut mac = Hmac::<Sha256>::new_from_slice(secret)?;
@@ -115,12 +122,8 @@ impl Validation for Header {
 /// calculating the SHA1 hash (see "Content-Addressable Storage" above). Arq changed to
 /// using a third secret key for salting the hash instead of a known value to address a
 /// privacy issue.
-
+#[derive(Debug)]
 pub struct EncryptionDat {
-    salt: Vec<u8>,
-    hmac_sha256: Vec<u8>,
-    iv: Vec<u8>,
-    encryption_key: Vec<u8>,
     pub master_keys: Vec<Vec<u8>>,
 }
 
@@ -147,9 +150,55 @@ impl EncryptionDat {
         );
     }
 
+    /// Generate EncryptionDat given a user-supplied password
+    ///
+    /// ```
+    /// use arq::object_encryption::EncryptionDat;
+    /// let enc_dat = EncryptionDat::generate("nor").unwrap();
+    /// let mut reader = std::io::Cursor::new(&enc_dat[..]);
+    /// let e_d = EncryptionDat::new(&mut reader, "nor").unwrap();
+    pub fn generate(password: &str) -> Result<Vec<u8>> {
+        let randomiser = SystemRandom::new();
+        // 1. Generate a random salt.
+        let mut salt = [0u8; 8];
+        randomiser.fill(&mut salt).unwrap();
+        // 2. Generate a random IV.
+        let mut iv = [0u8; 16];
+        randomiser.fill(&mut iv).unwrap();
+        // 3. Generate 3 random 32-byte "master keys" (96 bytes total).
+        let mut master_keys_buf = [0u8; 96];
+        randomiser.fill(&mut master_keys_buf).unwrap();
+        // 4. Derive 64-byte encryption key from user-supplied encryption password using
+        // PBKDF2/HMACSHA1 (200000 rounds) and the salt from step 1.
+        let mut encryption_key: [u8; 64] = [0; 64];
+        Self::derive_encryption_key(password.as_bytes(), &salt, &mut encryption_key);
+        // 5. Encrypt the master keys with AES256-CBC using the first 32 bytes of the
+        // derived key from step 4 and IV from step 2.
+        let mut buf = [0; 160];
+        //buf.copy_from_slice(&[&master_keys_buf[..], &[0; 16][..]].concat());
+        buf[..master_keys_buf.len()].copy_from_slice(&master_keys_buf);
+        let encrypted = Aes256CbcEnc::new_from_slices(&encryption_key[..32], &iv)?
+            .encrypt_padded_mut::<Pkcs7>(&mut buf, 96)
+            .unwrap();
+        // 6. Calculate the HMAC-SHA256 of (IV + encrypted master keys) using the second
+        // 32 bytes of the derived key from step 4.
+        assert_eq!(encrypted.len(), 112);
+        let hmac_sha256 =
+            calculate_hmacsha256(&encryption_key[32..], &[&iv[..], encrypted].concat())?;
+        assert_eq!(hmac_sha256.len(), 32);
+        Ok([
+            &ENCRYPTION_V2_HEADER,
+            &salt[..],
+            &hmac_sha256,
+            &iv,
+            encrypted,
+        ]
+        .concat())
+    }
+
     pub fn new<R: BufRead + Seek>(mut reader: R, password: &str) -> Result<EncryptionDat> {
         let header = reader.read_bytes(12)?;
-        assert_eq!(header, [69, 78, 67, 82, 89, 80, 84, 73, 79, 78, 86, 50]); // ENCRYPTIONV2
+        assert_eq!(header, ENCRYPTION_V2_HEADER);
         let salt = reader.read_bytes(8)?;
         let hmacsha256 = reader.read_bytes(32)?;
         let iv = reader.read_bytes(16)?;
@@ -164,15 +213,11 @@ impl EncryptionDat {
             return Err(Error::WrongPassword);
         }
 
-        let _ = Aes256CbcDec::new_from_slices(&encryption_key[0..32], &iv[..])?
+        let pt = Aes256CbcDec::new_from_slices(&encryption_key[0..32], &iv[..])?
             .decrypt_padded_mut::<Pkcs7>(&mut encrypted_master_keys)?;
 
         Ok(EncryptionDat {
-            salt: salt.to_vec(),
-            hmac_sha256: hmacsha256.to_vec(),
-            iv: iv.to_vec(),
-            encryption_key: encryption_key.to_vec(),
-            master_keys: Self::parse_master_keys(encrypted_master_keys),
+            master_keys: Self::parse_master_keys(pt.to_vec()),
         })
     }
 }
@@ -270,6 +315,14 @@ impl EncryptedObject {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_generate_encryption_dat() {
+        let password = "nor";
+        let enc_dat = EncryptionDat::generate(password).unwrap();
+        let mut reader = std::io::Cursor::new(&enc_dat[..]);
+        let _ = EncryptionDat::new(&mut reader, password).unwrap();
+    }
 
     #[test]
     fn test_calculate_hmacsha256() {
