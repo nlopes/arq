@@ -16,7 +16,7 @@ rustc-args = ["-C", "target-feature=+aes", "-C", "target-cpu=native"]
 rustdoc-args = ["-C", "target-feature=+aes", "-C", "target-cpu=native"]
 
 [badges]
-github = { workflow = "ci", repository = "nlopes/arq" }
+github = { workflow = "CI", repository = "nlopes/arq" }
 
 [dependencies]
 aes = "0.8"

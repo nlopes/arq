@@ -2,7 +2,7 @@
 [![docs.rs](https://docs.rs/arq/badge.svg)](https://docs.rs/arq)
 [![crates.io](https://img.shields.io/crates/v/arq.svg)](https://crates.io/crates/arq)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nlopes/arq/blob/master/LICENSE)
-[![Workflow Status](https://github.com/nlopes/arq/workflows/ci/badge.svg)](https://github.com/nlopes/arq/actions?query=workflow%3A%22ci%22)
+[![Workflow Status](https://github.com/nlopes/arq/workflows/CI/badge.svg)](https://github.com/nlopes/arq/actions?query=workflow%3A%22CI%22)
 
 # arq
 
