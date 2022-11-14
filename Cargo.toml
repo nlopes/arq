@@ -2,21 +2,21 @@
 name = "arq"
 version = "0.1.4"
 authors = ["Norberto Lopes <nlopes.ml@gmail.com>"]
-edition = "2018"
+edition = "2021"
 description = "Arq library to manage Arq Backup data formats"
 documentation = "https://docs.rs/arq"
 repository = "https://github.com/nlopes/arq.git"
 keywords = ["arq", "backup"]
 categories = ["data-structures", "encoding"]
 license = "MIT"
-exclude = [".gitignore", ".travis.yml"]
+exclude = [".gitignore", ".github/"]
 
 [package.metadata.docs.rs]
 rustc-args = ["-C", "target-feature=+aes", "-C", "target-cpu=native"]
 rustdoc-args = ["-C", "target-feature=+aes", "-C", "target-cpu=native"]
 
 [badges]
-travis-ci = { repository = "nlopes/arq", branch = "master" }
+github = { workflow = "ci", repository = "nlopes/arq" }
 
 [dependencies]
 aes = "0.8"
@@ -26,8 +26,7 @@ chrono = "0.4"
 digest = "0.10"
 hex-literal = "0.3"
 hmac = "0.12"
-lz4-sys = "1.9"
-pbkdf2 = "0.11"
+lz4_flex = "0.9"
 plist = "1.3"
 ring = "0.16"
 serde = "1.0"

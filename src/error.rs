@@ -1,3 +1,5 @@
+use std::num::TryFromIntError;
+
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
@@ -9,14 +11,23 @@ pub enum Error {
     ParseError,
     ConversionError(std::str::Utf8Error),
     IoError(std::io::Error),
+    DecompressionError(lz4_flex::block::DecompressError),
+    DecompressionDataLengthOutOfBounds,
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
-            Error::ConversionError(ref err) => write!(f, "{}", err),
-            _ => write!(f, "{}", self),
+            Error::ConversionError(ref err) => write!(f, "{err}"),
+            Error::DecompressionError(ref err) => write!(f, "{err}"),
+            _ => write!(f, "{:#?}", self),
         }
+    }
+}
+
+impl From<TryFromIntError> for Error {
+    fn from(_error: TryFromIntError) -> Self {
+        Error::DecompressionDataLengthOutOfBounds
     }
 }
 
@@ -62,5 +73,11 @@ impl std::convert::From<std::io::Error> for Error {
 impl std::convert::From<std::num::ParseIntError> for Error {
     fn from(_error: std::num::ParseIntError) -> Error {
         Error::ParseError
+    }
+}
+
+impl std::convert::From<lz4_flex::block::DecompressError> for Error {
+    fn from(error: lz4_flex::block::DecompressError) -> Error {
+        Error::DecompressionError(error)
     }
 }

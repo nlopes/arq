@@ -339,7 +339,7 @@ impl Tree {
         let mut nodes = HashMap::new();
         while node_count > 0 {
             let node_name = reader.read_arq_string()?;
-            assert_eq!(node_name.is_empty(), false);
+            assert!(!node_name.is_empty());
 
             let node = Node::new(&mut reader)?;
             nodes.insert(node_name, node);

@@ -2,7 +2,7 @@ use crate::error::Result;
 use crate::lz4;
 use crate::type_utils::ArqRead;
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum CompressionType {
     None,
     Gzip,

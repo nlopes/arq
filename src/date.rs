@@ -26,7 +26,8 @@ impl std::fmt::Display for Date {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         // Date is in milliseconds elapsed since epoch
         let naive_datetime =
-            NaiveDateTime::from_timestamp((self.milliseconds_since_epoch / 1000) as i64, 0);
+            NaiveDateTime::from_timestamp_opt((self.milliseconds_since_epoch / 1000) as i64, 0)
+                .unwrap();
         let datetime_again: DateTime<Utc> = DateTime::from_utc(naive_datetime, Utc);
         write!(f, "{}", datetime_again)
     }
