@@ -19,7 +19,7 @@ rustdoc-args = ["-C", "target-feature=+aes", "-C", "target-cpu=native"]
 github = { workflow = "CI", repository = "nlopes/arq" }
 
 [dependencies]
-aes = "0.8"
+aes = "0.9"
 byteorder = "1.4"
 cbc = "0.1"
 chrono = "0.4"
